@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
+	"html/template"
 	"os"
 	"log"
 	"net/http"
@@ -27,19 +28,44 @@ func loadPage(title string) (*Page, error) {
 	return &Page{Title: title, Body: body}, nil
 }
 
+func renderTemplate(w http.ResponseWriter, templateName string, p *Page) {
+	t, _ := template.ParseFiles(templateName)
+	t.Execute(w, p)
+}
+
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	start := len("/view/")
 	title := r.URL.Path[start:]
-	p, _ := loadPage(title)
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
+	p, err := loadPage(title)
+	if err != nil {
+	 	http.Redirect(w, r, "/edit/" + title, http.StatusFound)
+		return
+	}
+	renderTemplate(w, "view.html", p)
+
+}
+
+func editHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/edit/"):]
+	p, err := loadPage(title)
+	if err != nil {
+		p = &Page{Title: title}
+	}
+	renderTemplate(w, "edit.html", p)
+}
+
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[len("/save/"):]
+	body := r.FormValue("body")
+	p := &Page{Title: title, Body: []byte(body)}
+	p.save()
+	http.Redirect(w, r, "/view/" + title, http.StatusFound)
 }
 
 func main() {
-	// pageTitle := "Western movie"
-	// p1 := &Page{Title: pageTitle, Body: []byte("Once upon a time in the west")}
-	// p1.save()
-	// p2, _ := loadPage(pageTitle)
-	// fmt.Println(string(p2.Body))
 	http.HandleFunc("/view/", viewHandler)
+	http.HandleFunc("/edit/", editHandler)
+	http.HandleFunc("/save/", saveHandler)
+	fmt.Println("go to localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
