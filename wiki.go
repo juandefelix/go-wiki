@@ -27,11 +27,11 @@ func loadPage(title string) (*Page, error) {
 	return &Page{Title: title, Body: body}, nil
 }
 
-func viewHandler(w http.ResponseWriter, r http.Request) {
+func viewHandler(w http.ResponseWriter, r *http.Request) {
 	start := len("/view/")
 	title := r.URL.Path[start:]
-	p, _ = loadPage(title)
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.title, p.body)
+	p, _ := loadPage(title)
+	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
 }
 
 func main() {
@@ -40,6 +40,6 @@ func main() {
 	// p1.save()
 	// p2, _ := loadPage(pageTitle)
 	// fmt.Println(string(p2.Body))
-	http.HandleFunction("/view/", viewHandler)
-	log.Fatal(http.ListenAndServe(":8000"), nil)
+	http.HandleFunc("/view/", viewHandler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
